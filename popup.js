@@ -316,6 +316,7 @@ function runAltAuditOnPage() {
         line-height: 1!important;
         font-size: 14px!important;
         font-weight: bold!important;
+        letter-spacing: 0!important;
         border-radius: 6px!important;
         text-transform: none!important;
         border: 3px solid #000!important;
