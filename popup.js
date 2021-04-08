@@ -54,17 +54,14 @@ function runAltAuditOnPage() {
   function initAltAudit() {
     let images = document.querySelectorAll('img'),
         imageCount = images.length,
-        altTags = document.querySelectorAll('[alt]'),
-        altCount = altTags.length,
+        altCount = 0,
         altText = [],
-        i = altCount,
-        filenameRe = /[^\s]+(\.(jpg|JPG|jpeg|JPEG|png|PNG|gif|GIF|bmp|BMP|svg|SVG|webp|WEBP))$/g,
-        altWarnings = 0,
+        filenameRe = /[^\s]+(\.(jpg|JPG|jpeg|JPEG|png|PNG|gif|GIF|bmp|BMP|svg|SVG|webp|WEBP))/g,
+        filenameWarnings = 0,
+        titleWarnings = 0,
+        imageWarnings = [],
         altImages = [],
         altImageIndex = 0;
-
-    // build array of alt tags from elements with alt attr
-    altTags = Array.from(altTags);
 
     // Add classes to images based on presence of alt attr
     images.forEach(function(image, index) {
@@ -73,25 +70,35 @@ function runAltAuditOnPage() {
         image.setAttribute('data-altaudit-id', altImageIndex);
         altImages.push(image);
         altImageIndex++;
+        // Get alt text and push it to altText array
+        altCount++;
+        let imageAlt = image.getAttribute('alt');
+        altText.push(imageAlt);
+        let imageFilenameWarning = imageTitleWarning = false;
+        // Check alt Text for Warnings
+        // Filename warning
+        if (imageAlt.match(filenameRe)) {
+          filenameWarnings++;
+          imageFilenameWarning = true;
+          image.classList.add('altAudit-image-filenameWarning');
+        } else {
+          // Title/caption warning
+          let altTextSiblings = getSiblings(image);
+          altTextSiblings.forEach(sibling => {
+            let outerHTML = sibling.outerHTML;
+            if (sibling.tagName !== 'NOSCRIPT' && sibling.tagName !== 'IMG' && outerHTML.includes(imageAlt)) {
+              titleWarnings++;
+              imageTitleWarning = true;
+              image.classList.add('altAudit-image-titleWarning');
+            }
+          });
+        }
+        // Add warnings to imageWarnings array
+        imageWarnings.push({'filenameWarning': imageFilenameWarning, 'titleWarning': imageTitleWarning});
       } else {
         image.classList.add('altAudit-noAlt');
       }
     });
-
-    // prune altTags for empty entries
-    while (i--) {
-      if (altTags[i].alt === '') {
-        altTags.splice(i, 1);
-        altCount--;
-      } else {
-        altText.push(altTags[i].alt)
-        if (altTags[i].alt.match(filenameRe)) {
-          altWarnings++;
-        }
-      }
-    }
-    // flip it back around!
-    altText = altText.reverse();
 
     // If run again, remove the first instance
     if (document.getElementById('altAudit')) {
@@ -129,11 +136,11 @@ function runAltAuditOnPage() {
       }
 
       #altAudit {
-        top: 25px;
         width: 50%;
         padding: 0;
-        left: 25px;
+        right: 25px;
         height: 75%;
+        bottom: 25px;
         position: fixed;
         min-width: 360px;
         overflow: hidden;
@@ -214,10 +221,16 @@ function runAltAuditOnPage() {
         font-weight: bold!important;
       }
 
-      .altAudit-warningLabel span {
+      .altAudit-filenameWarningLabel span {
         padding: 0 0.1em;
         display: inline-block;
         background-color: #f6e533;
+        font-weight: bold!important;
+      }
+      .altAudit-titleWarningLabel span {
+        padding: 0 0.1em;
+        display: inline-block;
+        background-color: #f4b131;
         font-weight: bold!important;
       }
 
@@ -242,6 +255,12 @@ function runAltAuditOnPage() {
 
       .altAudit-highlighted {
         border: 5px solid #1372f6!important;
+      }
+      .altAudit-highlighted.altAudit-image-filenameWarning {
+        border: 5px solid #f6e533!important;
+      }
+      .altAudit-highlighted.altAudit-image-titleWarning {
+        border: 5px solid #f4b131!important;
       }
 
       .altAudit-noAlt {
@@ -271,10 +290,15 @@ function runAltAuditOnPage() {
         font-weight: bold!important;
       }
 
-      .altAudit-altListItem-flagged span {
+      .altAudit-altListItem-filenameWarning span {
         padding: 8px!important;
         font-weight: bold!important;
         background-color: #f6e533!important;
+      }
+      .altAudit-altListItem-titleWarning span {
+        padding: 8px!important;
+        font-weight: bold!important;
+        background-color: #f4b131!important;
       }
 
       #altAudit-buttonGroup {
@@ -308,20 +332,25 @@ function runAltAuditOnPage() {
 
     // Get a percentage of alt tags found for images and set up message
     let percentage = Math.round(altCount / imageCount * 100),
-        percentageColor = percentage > 90 ? '#20bc20' : '#Fc6467';
+      percentageColor = percentage > 90 ? '#5dba59' : '#Fc6467';
+    let percentageMessage = percentage + '%';
     if (percentage === 100) {
-      percentage = percentage + '% <span style="text-shadow:0 0 #000;">👍</span>';
-    } else {
-      percentage = percentage + '% <span style="text-shadow:0 0 #000;">👎</span>';
+      percentageMessage += ' <span style="text-shadow:0 0 #000;">👍</span>';
+    } else if (percentage < 90) {
+      percentageMessage += ' <span style="text-shadow:0 0 #000;">👎</span>';
     }
 
     // Start building the report markup
-    let reportMarkup = '<div id="altAudit-header"><h1 tabindex="0">Alt Audit</h1></div><div id="altAudit-overflowContainer"><h3><strong>' + imageCount + '</strong> total images found, <strong>' + altCount + '</strong> non-empty alt tags found. <span style="display:inline-block;padding:4px 6px;border-radius:6px;font-weight:700;background-color:' + percentageColor  + ';">' + percentage + '</span></h3>';
+    let reportMarkup = '<div id="altAudit-header"><h1 tabindex="0">Alt Audit</h1></div><div id="altAudit-overflowContainer"><h3><strong>' + imageCount + '</strong> total images found, <strong>' + altCount + '</strong> non-empty alt tags found. <span style="display:inline-block;padding:4px 6px;border-radius:6px;font-weight:700;background-color:' + percentageColor  + ';">' + percentageMessage + '</span></h3>';
 
     // If any warnings were found, let 'em know
-    if (altWarnings > 0) {
-      let hasHave = altWarnings > 1 ? 'have' : 'has';
-      reportMarkup += '<h3 class="altAudit-warningLabel"><span>' + altWarnings + '</span> of those images ' + hasHave + ' alt text that appears to just be the image filename, and have been <span class="altAudit-warningLabel">highlighted</span> below.<h3>';
+    if (filenameWarnings > 0) {
+      let hasHave = filenameWarnings > 1 ? 'have' : 'has';
+      reportMarkup += '<h3 class="altAudit-filenameWarningLabel"><span>' + filenameWarnings + '</span> of those images ' + hasHave + ' alt text that appears to just be the image filename, and ' + hasHave + ' been <span class="altAudit-filenameWarningLabel">highlighted</span> below.<h3>';
+    }
+    if (titleWarnings > 0) {
+      let hasHave = titleWarnings > 1 ? 'have' : 'has';
+      reportMarkup += '<h3 class="altAudit-titleWarningLabel"><span>' + titleWarnings + '</span> of those images ' + hasHave + ' alt text that may be the same as the image title or caption, and ' + hasHave + ' been <span class="altAudit-titleWarningLabel">highlighted</span> below.<h3>';
     }
 
     // If alt text was found, build a list
@@ -331,9 +360,14 @@ function runAltAuditOnPage() {
       altText.forEach(function(image, index) {
         // Check if it looks like just a file name and flag it with a warning
         let warning = warningMessage = '';
-        if (image.match(filenameRe)) {
-          warning = ' altAudit-altListItem-flagged';
-          warningMessage = '<span class="visually-hidden">Warning: this alt text appears to be just the image filename.</span>';
+        if (imageWarnings[index].filenameWarning || imageWarnings[index].titleWarning) {
+          if (imageWarnings[index].filenameWarning) {
+            warning = ' altAudit-altListItem-filenameWarning';
+            warningMessage = '<span class="visually-hidden">. Warning: this alt text appears to be just the image filename.</span>';
+          } else if (imageWarnings[index].titleWarning) {
+            warning = ' altAudit-altListItem-titleWarning';
+            warningMessage = '<span class="visually-hidden">. Warning: this alt text appears to be the same as the image title or caption.</span>';
+          }
         }
         altListMarkup += '<li data-altaudit-matching-id="' + index + '" class="altAudit-altListItem' + warning + '"><span>' + image + '</span>' + warningMessage + '</li>';
       });
@@ -530,4 +564,19 @@ function runAltAuditOnPage() {
       document.addEventListener('mouseup', mouseUp);
     })();
   }
+
+  function getSiblings(elem) {
+    // Setup siblings array and get the first sibling
+    var siblings = [];
+    var sibling = elem.parentNode.firstChild;
+    // Loop through each sibling and push to the array
+    while (sibling) {
+      if (sibling.nodeType === 1 && sibling !== elem) {
+        siblings.push(sibling);
+      }
+      sibling = sibling.nextSibling
+    }
+
+    return siblings;
+  };
 }
