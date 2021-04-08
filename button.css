@@ -1,0 +1,46 @@
+#popup {
+  margin: 0;
+  width: 320px;
+  padding: 25px;
+  background: #fff;
+  border: 5px solid #000;
+  font-family: monospace!important;
+}
+
+button {
+  outline: none;
+  padding: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 6px;
+  white-space: nowrap;
+  margin: 10px 0 25px;
+  font-family: monospace;
+  border: 3px solid #000;
+}
+
+button:hover,
+button:focus {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #000;
+}
+
+#popup p {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+#popup p:first-of-type {
+  margin-top: 0;
+}
+#popup p.small {
+  font-size: 10px;
+  font-weight: normal;
+}
+#popup a {
+  color: #1372f6;
+  font-weight: bold;
+}
+#popup a:hover,
+#popup a:focus {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1372f6;
+}
