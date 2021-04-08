@@ -1,6 +1,8 @@
 # Alt Audit
 A browser extension to help you audit pages for alt text.
 
+![GitHub manifest version](https://img.shields.io/github/manifest-json/v/itsmattsoria/alt-audit?style=flat-square)
+
 ![Screenshot of Alt Audit browser extension in use](images/screenshot.jpg)
 
 ## Installation
