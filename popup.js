@@ -481,6 +481,7 @@ function runAltAuditOnPage() {
     firstFocusableElement.focus();
 
     // Draggability
+    // adapted from Stef Williams: https://codepen.io/ramenhog/pen/gmGzRQ
     (function () {
       let yDelta,
         xDelta,
@@ -568,6 +569,8 @@ function runAltAuditOnPage() {
     })();
   }
 
+  // Helper function for grabbing element siblings
+  // plucked from Chris Ferdinandi: https://gomakethings.com/how-to-get-all-of-an-elements-siblings-with-vanilla-js/
   function getSiblings(elem) {
     // Setup siblings array and get the first sibling
     var siblings = [];
