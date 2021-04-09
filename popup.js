@@ -121,6 +121,7 @@ function runAltAuditOnPage() {
       #altAudit *,
       #altAudit-loading,
       #altAudit-loading * {
+        letter-spacing: 0!important;
         text-transform: none!important;
         font-family: monospace!important;
       }
@@ -269,6 +270,7 @@ function runAltAuditOnPage() {
 
       .altAudit-altListItem {
         margin: 0!important;
+        font-size: 16px!important;
         cursor: pointer!important;
         padding: 25px 12px!important;
         border-bottom: 1px solid #000!important;
