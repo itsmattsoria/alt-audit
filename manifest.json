@@ -1,7 +1,7 @@
 {
   "name": "Alt Audit",
   "description": "Run Alt Audit on a webpage to scan the page for images and get an overview of how the page is handling alt text.",
-  "version": "1.4",
+  "version": "1.5",
   "manifest_version": 3,
   "permissions": [
     "activeTab",
