@@ -65,14 +65,14 @@ function runAltAuditOnPage() {
 
     // Add classes to images based on presence of alt attr
     images.forEach(function(image, index) {
-      if (image.hasAttribute('alt') && image.getAttribute('alt') !== '') {
+      const imageAlt = image.getAttribute('alt');
+      if (image.hasAttribute('alt') && imageAlt !== '' && imageAlt !== ' ' && imageAlt !== 'Untitled image' && imageAlt !== 'untitled image' && imageAlt !== 'Untitled photo' && imageAlt !== 'untitled photo') {
         image.classList.add('altAudit-hasAlt');
         image.setAttribute('data-altaudit-id', altImageIndex);
         altImages.push(image);
         altImageIndex++;
         // Get alt text and push it to altText array
         altCount++;
-        let imageAlt = image.getAttribute('alt');
         altText.push(imageAlt);
         let imageFilenameWarning = imageTitleWarning = false;
         // Check alt Text for Warnings
@@ -275,6 +275,9 @@ function runAltAuditOnPage() {
         padding: 25px 12px!important;
         border-bottom: 1px solid #000!important;
         counter-increment: list-counter!important;
+      }
+      .altAudit-altListItem span {
+        display: inline-block;
       }
       .altAudit-altListItem::before {
         font-weight: bold!important;
