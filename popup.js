@@ -169,10 +169,10 @@ function runAltAuditOnPage() {
       }
 
       #altAudit {
-        width: 50%;
         padding: 0;
         right: 25px;
         height: 75%;
+        width: 500px;
         bottom: 25px;
         position: fixed;
         min-width: 360px;
@@ -225,14 +225,13 @@ function runAltAuditOnPage() {
 
       #altAudit .text-large {
         color: #000!important;
-        line-height: 1!important;
+        padding: 0!important;
         font-size: 24px!important;
         margin: 4px 0 0!important;
+        line-height: 1.2!important;
         font-weight: bold!important;
         font-style: normal!important;
-        white-space: nowrap!important;
         text-transform: none!important;
-        padding: 0 200px 0 0!important;
       }
       #altAudit h1:focus {
         outline:none!important;
@@ -254,8 +253,16 @@ function runAltAuditOnPage() {
       #altAudit .results-label a {
         font-weight: 700;
         color: inherit!important;
-        underline-offset: 0.02em;
         text-decoration: underline;
+        text-underline-offset: 0.02em;
+      }
+
+      #altAudit .results-label a:hover,
+      #altAudit .results-label a:focus-visible {
+        background-color: transparent!important;
+        box-shadow:
+        0 0 0 2px #fff,
+        0 0 0 4px #1372f6;
       }
 
       .altAudit-headline {
@@ -401,17 +408,12 @@ function runAltAuditOnPage() {
       percentageMessage += ' <span style="text-shadow:0 0 #000;">👎</span>';
     }
 
+    let imageCountMessage = imageCount > 1 ? 'total images' : 'image';
+    let altCountMessage = altCount > 1 ? 'alt attributes' : 'alt attribute';
+
     // Start building the report markup
-    let reportMarkup =
-      '<div id="altAudit-header"><h1 class="text-large" tabindex="0">Alt Audit</h1></div><div id="altAudit-overflowContainer"><p class="results-label"><strong>' +
-      imageCount +
-      '</strong> total images found, <strong>' +
-      altCount +
-      '</strong> alt attributes found. <span style="display:inline-block;padding:4px 6px;border-radius:6px;font-weight:700;background-color:' +
-      percentageColor +
-      ';">' +
-      percentageMessage +
-      '</span></p>';
+    let reportMarkup = `<div id="altAudit-header"><h1 class="text-large" tabindex="0">Alt Audit</h1></div><div id="altAudit-overflowContainer">
+        <p class="results-label"><strong>${imageCount}</strong> ${imageCountMessage} found, <strong>${altCount}</strong> ${altCountMessage} found. <span style="display:inline-block;padding:4px 6px;border-radius:6px;font-weight:700;background-color:${percentageColor};">${percentageMessage}</span></p>`;
 
     // If any warnings were found, let 'em know
     if (filenameWarnings > 0) {
@@ -493,7 +495,7 @@ function runAltAuditOnPage() {
     } else {
       // Nothing found — boo!
       reportMarkup +=
-        '<div class="text-large">We didn\'t find any alt attributes on this page. You probably need to add some good alt text to your images, or in the case of <a href="https://www.w3.org/WAI/tutorials/images/decorative/" target="_blank">decroative images</a>, add empty alt attributes. (ex: <code>alt=""</code>)</div></div>';
+        '<p class="results-label">We didn\'t find any alt attributes on this page. You probably need to add some good alt text to your images, or in the case of <a href="https://www.w3.org/WAI/tutorials/images/decorative/" target="_blank">decroative images</a>, add empty alt attributes. (ex: <code>alt=""</code>)</p></div>';
     }
 
     // Add drag and close buttons and custom resize handle
