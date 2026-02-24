@@ -99,11 +99,11 @@ function runAltAuditOnPage() {
         if (imageAlt.match(filenameRe)) {
           filenameWarnings++;
           imageFilenameWarning = true;
-          image.classList.add('altAudit-image-filenameWarning');
+          image.setAttribute('data-altAudit-image-filename-warning', 'true');
         } else if (imageAlt === '(empty alt attribute)') {
           emptyAltWarnings++;
           emptyAltWarning = true;
-          image.classList.add('altAudit-image-emptyAltWarning');
+          image.setAttribute('data-altAudit-image-empty-alt-warning', 'true');
         } else {
           // Title/caption warning
           let altTextSiblings = getSiblings(image);
@@ -116,7 +116,7 @@ function runAltAuditOnPage() {
             ) {
               titleWarnings++;
               imageTitleWarning = true;
-              image.classList.add('altAudit-image-titleWarning');
+              image.setAttribute('data-altAudit-image-title-warning', 'true');
             }
           });
         }
@@ -128,7 +128,7 @@ function runAltAuditOnPage() {
         });
       } else {
         noAltWarnings++;
-        image.classList.add('altAudit-image-noAltWarning');
+        image.setAttribute('data-altAudit-image-no-alt-warning', 'true');
       }
     });
 
@@ -242,6 +242,7 @@ function runAltAuditOnPage() {
       #altAudit .results-label {
         font-size: 18px;
         font-weight: 400;
+        text-wrap: pretty;
         color: #000!important;
         margin: 0 0 1em!important;
       }
@@ -252,6 +253,7 @@ function runAltAuditOnPage() {
 
       #altAudit .results-label a {
         font-weight: 700;
+        color: inherit!important;
         underline-offset: 0.02em;
         text-decoration: underline;
       }
@@ -287,6 +289,7 @@ function runAltAuditOnPage() {
         overflow: auto;
         position: absolute;
         padding: 25px 0 50px;
+        scroll-gutter: stable;
       }
 
       #altAudit-altList {
@@ -300,27 +303,26 @@ function runAltAuditOnPage() {
 
       .altAudit-highlighted {
         box-sizing: border-box!important;
-        border: 8px solid #1372f6!important;
+        border: 8px dashed #1372f6!important;
       }
-      .altAudit-highlighted.altAudit-image-filenameWarning {
-        border: 8px solid #f6e533!important;
+      .altAudit-highlighted[data-altAudit-image-filename-warning] {
+        border: 8px dashed #f6e533!important;
       }
-      .altAudit-highlighted.altAudit-image-titleWarning {
-        border: 8px solid #f4b131!important;
+      .altAudit-highlighted[data-altAudit-image-title-warning] {
+        border: 8px dashed #f4b131!important;
       }
-      .altAudit-highlighted.altAudit-image-emptyAltWarning {
-        border: 8px solid #CC88F6!important;
+      .altAudit-highlighted[data-altAudit-image-empty-alt-warning] {
+        border: 8px dashed #CC88F6!important;
       }
-
-      .altAudit-noAlt {
-        outline: #fc1d22 dashed 5px!important;
+      [data-altAudit-image-no-alt-warning] {
+        border: 8px dashed #fc1d22!important;
       }
 
       .altAudit-altListItem {
         margin: 0!important;
+        padding: 12px!important;
         font-size: 16px!important;
         cursor: pointer!important;
-        padding: 25px 12px!important;
         border-bottom: 1px solid #000!important;
         counter-increment: list-counter!important;
       }
@@ -421,7 +423,7 @@ function runAltAuditOnPage() {
         hasHave +
         ' alt text that appears to just be the image filename, and ' +
         hasHave +
-        ' been <span class="altAudit-filenameWarningLabel">highlighted</span> below.</p>';
+        ' been <span class="altAudit-filenameWarningLabel">highlighted in yellow</span> below.</p>';
     }
     if (titleWarnings > 0) {
       let hasHave = titleWarnings > 1 ? 'have' : 'has';
@@ -432,7 +434,7 @@ function runAltAuditOnPage() {
         hasHave +
         ' alt text that may be the same as the image title or caption, and ' +
         hasHave +
-        ' been <span class="altAudit-titleWarningLabel">highlighted</span> below.</p>';
+        ' been <span class="altAudit-titleWarningLabel">highlighted in orange</span> below.</p>';
     }
     if (emptyAltWarnings > 0) {
       let hasHave = emptyAltWarnings > 1 ? 'have' : 'has';
@@ -443,7 +445,7 @@ function runAltAuditOnPage() {
         hasHave +
         " empty alt attributes, which is only valid if the image is truly <a href='https://www.w3.org/WAI/tutorials/images/decorative/' target='_blank'>decorative</a>. It's worth double-shecking, so they " +
         hasHave +
-        ' been <span class="altAudit-emptyAltWarningLabel">highlighted</span> below.</p>';
+        ' been <span class="altAudit-emptyAltWarningLabel">highlighted in purple</span> below.</p>';
     }
 
     // If alt text was found, build a list
