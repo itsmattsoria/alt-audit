@@ -62,38 +62,52 @@ function runAltAuditOnPage() {
   // the main business
   function initAltAudit() {
     let images = document.querySelectorAll('img'),
+      svgs = document.querySelectorAll('svg'),
+      svgCount = svgs.length,
       imageCount = images.length,
       altCount = 0,
       altText = [],
+      svgAltText = [],
       filenameRe =
-        /[^\s]+(\.(jpg|JPG|jpeg|JPEG|png|PNG|gif|GIF|bmp|BMP|svg|SVG|webp|WEBP))/g,
+        /[^\s]+(\.(jpg|JPG|jpeg|JPEG|png|PNG|gif|GIF|bmp|BMP|svg|SVG|webp|WEBP|avif|AVIF))/g,
       filenameWarnings = 0,
       titleWarnings = 0,
       emptyAltWarnings = 0,
       noAltWarnings = 0,
+      svgAriaHiddenWarnings = 0,
+      svgNoAltWarnings = 0,
+      svgWarnings = [],
+      svgAltCount = 0,
       imageWarnings = [],
-      altImages = [],
-      altImageIndex = 0;
+      imageIndex = 0,
+      svgIndex = 0;
 
     // Add classes to images based on presence of alt attr
     images.forEach(function (image, index) {
+      // Id the image and add it to the altImages array
+      image.setAttribute('data-altaudit-id', imageIndex);
+      imageIndex++;
+
       let imageAlt = image.getAttribute('alt');
+      if (imageAlt === '') {
+        imageAlt = '(empty alt attribute)';
+      } else if (imageAlt === null) {
+        imageAlt = '(no alt attribute)';
+      }
+      altText.push(imageAlt);
+
+      // Process the image
       if (image.hasAttribute('alt')) {
         image.classList.add('altAudit-hasAlt');
-        image.setAttribute('data-altaudit-id', altImageIndex);
-        altImages.push(image);
-        altImageIndex++;
+
         // Get alt text and push it to altText array
         altCount++;
-        if (imageAlt === '') {
-          imageAlt = '(empty alt attribute)';
-        }
-        altText.push(imageAlt);
+
+        // Check alt Text for Warnings
         let imageFilenameWarning =
           (imageTitleWarning =
           emptyAltWarning =
             false);
-        // Check alt Text for Warnings
 
         // Filename warning
         if (imageAlt.match(filenameRe)) {
@@ -129,7 +143,47 @@ function runAltAuditOnPage() {
       } else {
         noAltWarnings++;
         image.setAttribute('data-altAudit-image-no-alt-warning', 'true');
+        imageWarnings.push({
+          noAltWarning: true,
+        });
       }
+    });
+
+    // Process SVGs
+    svgs.forEach(function (svg) {
+      svg.setAttribute('data-altaudit-id', 'svg-' + svgIndex);
+      svgIndex++;
+
+      const ariaHidden = svg.getAttribute('aria-hidden'),
+        svgTitle = svg.querySelector('title')?.textContent,
+        svgDesc = svg.querySelector('desc')?.textContent;
+
+      let svgAlt = svgTitle || svgDesc || '(no alt text)';
+
+      let svgAriaHiddenWarning = (svgNoAltWarning = false);
+
+      if (ariaHidden) {
+        svgAriaHiddenWarnings++;
+        svgAriaHiddenWarning = true;
+        svg.setAttribute('data-altAudit-svg-aria-hidden-warning', 'true');
+        if (svgAlt === '(no alt text)') {
+          svgAlt += ' (aria-hidden)';
+        }
+      } else if (svgAlt !== '(no alt text)') {
+        svgAltCount++;
+        svg.classList.add('altAudit-hasAlt');
+      } else {
+        svgNoAltWarnings++;
+        svgNoAltWarning = true;
+        svg.setAttribute('data-altAudit-svg-no-alt-warning', 'true');
+      }
+
+      svgWarnings.push({
+        svgAriaHiddenWarning: svgAriaHiddenWarning,
+        svgNoAltWarning: svgNoAltWarning,
+      });
+
+      svgAltText.push(svgAlt);
     });
 
     // If run again, remove the first instance
@@ -172,7 +226,7 @@ function runAltAuditOnPage() {
         padding: 0;
         right: 25px;
         height: 75%;
-        width: 500px;
+        width: 600px;
         bottom: 25px;
         position: fixed;
         min-width: 360px;
@@ -208,15 +262,15 @@ function runAltAuditOnPage() {
       }
 
       #altAudit-header {
-        z-index: 1;
+        z-index: 2;
         position: relative;
-        padding: 25px!important;
+        padding: 16px!important;
         background-color: #fff!important;
       }
       #altAudit-header::after {
         bottom: 0;
-        left: 25px;
-        right: 25px;
+        left: 16px;
+        right: 16px;
         content: '';
         height: 3px;
         position: absolute;
@@ -238,10 +292,22 @@ function runAltAuditOnPage() {
         appearance:none!important;
       }
 
+      #altAudit .text-medium {
+        color: #000!important;
+        padding: 0!important;
+        font-size: 18px!important;
+        line-height: 1.2!important;
+        font-weight: bold!important;
+        font-style: normal!important;
+        margin: 2em 0 0.5em!important;
+        text-transform: none!important;
+      }
+
       #altAudit .results-label {
         font-size: 18px;
         font-weight: 400;
         text-wrap: pretty;
+        padding-inline: 16px;
         color: #000!important;
         margin: 0 0 1em!important;
       }
@@ -269,37 +335,43 @@ function runAltAuditOnPage() {
         font-weight: bold!important;
       }
 
-      .altAudit-filenameWarningLabel span {
+      .altAudit-filenameWarningLabel span,
+      .altAudit-ariaHiddenWarningLabel span {
         padding: 0 0.1em;
-        display: inline-block;
         background-color: #f6e533;
         font-weight: bold!important;
       }
       .altAudit-titleWarningLabel span {
         padding: 0 0.1em;
-        display: inline-block;
         background-color: #f4b131;
         font-weight: bold!important;
       }
       .altAudit-emptyAltWarningLabel span {
         padding: 0 0.1em;
-        display: inline-block;
         background-color: #CC88F6;
+        font-weight: bold!important;
+      }
+      .altAudit-noAltWarningLabel span {
+        padding: 0 0.1em;
+        background-color: #Fc6467;
         font-weight: bold!important;
       }
 
       #altAudit-overflowContainer {
+        left: 0;
+        right: 0;
         bottom: 0;
-        top: 78px;
-        left: 25px;
-        right: 25px;
+        top: 56px;
         overflow: auto;
         position: absolute;
         padding: 25px 0 50px;
-        scroll-gutter: stable;
       }
 
-      #altAudit-altList {
+      #altAudit-overflowContainer h2.text-medium {
+        padding-inline: 16px!important;
+      }
+
+      .altAudit-altList {
         margin: 0!important;
         padding: 0!important;
         border: none!important;
@@ -312,7 +384,8 @@ function runAltAuditOnPage() {
         box-sizing: border-box!important;
         border: 8px dashed #1372f6!important;
       }
-      .altAudit-highlighted[data-altAudit-image-filename-warning] {
+      .altAudit-highlighted[data-altAudit-image-filename-warning],
+      .altAudit-highlighted[data-altAudit-svg-aria-hidden-warning] {
         border: 8px dashed #f6e533!important;
       }
       .altAudit-highlighted[data-altAudit-image-title-warning] {
@@ -324,9 +397,19 @@ function runAltAuditOnPage() {
       [data-altAudit-image-no-alt-warning] {
         border: 8px dashed #fc1d22!important;
       }
+      [data-altAudit-image-no-alt-warning].altAudit-highlighted {
+        border: 12px dashed #fc1d22!important;
+      }
+      [data-altAudit-svg-no-alt-warning] {
+        border: 4px dashed #fc1d22!important;
+      }
+      [data-altAudit-svg-no-alt-warning].altAudit-highlighted {
+        border: 8px dashed #fc1d22!important;
+      }
 
       .altAudit-altListItem {
         margin: 0!important;
+        display: flex!important;
         padding: 12px!important;
         font-size: 16px!important;
         cursor: pointer!important;
@@ -334,14 +417,16 @@ function runAltAuditOnPage() {
         counter-increment: list-counter!important;
       }
       .altAudit-altListItem span {
-        display: inline-block;
+        display: inline;
       }
       .altAudit-altListItem::before {
+        z-index: 1!important;
         font-weight: bold!important;
+        position: relative!important;
         content: counter(list-counter) ". "!important;
       }
       .altAudit-altListItem:nth-of-type(odd) {
-        background-color: #eee!important;
+        background-color: #E6E6E6!important;
       }
 
       .altAudit-altListItem:hover span,
@@ -352,25 +437,49 @@ function runAltAuditOnPage() {
         font-weight: bold!important;
       }
 
-      .altAudit-altListItem-filenameWarning span {
-        padding: 8px!important;
+      .altAudit-altListItem-noAltWarning,
+      .altAudit-altListItem-emptyAltWarning,
+      .altAudit-altListItem-noSvgAltWarning,
+      .altAudit-altListItem-svgAriaHiddenWarning,
+      .altAudit-altListItem-filenameWarning {
         font-weight: bold!important;
-        background-color: #f6e533!important;
+        position: relative!important;
+
+        &::after {
+          inset: 0!important;
+          z-index: 0!important;
+          content: ''!important;
+          position: absolute!important;
+          pointer-events: none!important;
+        }
+
+        > * {
+          z-index: 1!important;
+          position: relative!important;
+        }
       }
-      .altAudit-altListItem-titleWarning span {
-        padding: 8px!important;
-        font-weight: bold!important;
-        background-color: #f4b131!important;
+      .altAudit-altListItem-filenameWarning,
+      .altAudit-altListItem-svgAriaHiddenWarning {
+        &::after {
+          background-color: rgba(246, 229, 50, 0.6)!important;
+        }
       }
-      .altAudit-altListItem-emptyAltWarning span {
-        padding: 8px!important;
-        font-weight: bold!important;
-        background-color: #CC88F6!important;
+      .altAudit-altListItem-titleWarning::after {
+        background-color: rgba(244, 177, 49, 0.6)!important;
+      }
+      .altAudit-altListItem-emptyAltWarning::after {
+        background-color: rgba(204, 136, 246, 0.6)!important;
+      }
+      .altAudit-altListItem-noAltWarning,
+      .altAudit-altListItem-noSvgAltWarning {
+        &::after {
+          background-color: rgba(252, 100, 103, 0.6)!important;
+        }
       }
 
       #altAudit-buttonGroup {
-        top: 21px;
-        z-index: 1;
+        top: 13px;
+        z-index: 3;
         right: 25px;
         position: absolute;
         white-space: nowrap;
@@ -411,9 +520,37 @@ function runAltAuditOnPage() {
     let imageCountMessage = imageCount > 1 ? 'total images' : 'image';
     let altCountMessage = altCount > 1 ? 'alt attributes' : 'alt attribute';
 
+    // Get a percentage of alt text found for SVGs
+    let svgsAllHidden = svgCount === svgAriaHiddenWarnings;
+    let svgPercentage = Math.round(
+        (svgAltCount / (svgCount - svgAriaHiddenWarnings)) * 100
+      ),
+      svgPercentageColor = svgPercentage > 90 ? '#5dba59' : '#Fc6467';
+    let svgPercentageMessage = svgPercentage + '%';
+    if (svgPercentage === 100) {
+      svgPercentageMessage += ' <span style="text-shadow:0 0 #000;">👍</span>';
+    } else if (svgPercentage < 90) {
+      svgPercentageMessage += ' <span style="text-shadow:0 0 #000;">👎</span>';
+    }
+    let svgAltMessage = '';
+    if (svgsAllHidden) {
+      svgAltMessage = ' all of them had an `aria-hidden` attribute.';
+    } else {
+      svgAltMessage = `<strong>${svgAltCount}</strong> that were not \`aria-hidden\` had some form of alt text. <span style="display:inline-block;padding:4px 6px;border-radius:6px;font-weight:700;background-color:${svgPercentageColor};">${svgPercentageMessage}</span></p>`;
+    }
+
+    let svgCountMessage = svgCount > 1 ? 'total SVGs' : 'SVG';
+
     // Start building the report markup
-    let reportMarkup = `<div id="altAudit-header"><h1 class="text-large" tabindex="0">Alt Audit</h1></div><div id="altAudit-overflowContainer">
-        <p class="results-label"><strong>${imageCount}</strong> ${imageCountMessage} found, <strong>${altCount}</strong> ${altCountMessage} found. <span style="display:inline-block;padding:4px 6px;border-radius:6px;font-weight:700;background-color:${percentageColor};">${percentageMessage}</span></p>`;
+    let reportMarkup = `<div id="altAudit-header"><h1 class="text-large" tabindex="0">Alt Audit</h1></div><div id="altAudit-overflowContainer">`;
+
+    if (imageCount > 0) {
+      reportMarkup += `<p class="results-label"><strong>${imageCount}</strong> <a href="#altAudit-imageList">${imageCountMessage}</a> found, <strong>${altCount}</strong> ${altCountMessage} found. <span style="display:inline-block;padding:4px 6px;border-radius:6px;font-weight:700;background-color:${percentageColor};">${percentageMessage}</span></p>`;
+    }
+
+    if (svgCount > 0) {
+      reportMarkup += `<p class="results-label"><strong>${svgCount}</strong> <a href="#altAudit-svgList">${svgCountMessage}</a> found, ${svgAltMessage}</p>`;
+    }
 
     // If any warnings were found, let 'em know
     if (filenameWarnings > 0) {
@@ -421,7 +558,7 @@ function runAltAuditOnPage() {
       reportMarkup +=
         '<p class="results-label altAudit-filenameWarningLabel"><span>' +
         filenameWarnings +
-        '</span> of those images ' +
+        '</span> of the images ' +
         hasHave +
         ' alt text that appears to just be the image filename, and ' +
         hasHave +
@@ -432,7 +569,7 @@ function runAltAuditOnPage() {
       reportMarkup +=
         '<p class="results-label altAudit-titleWarningLabel"><span>' +
         titleWarnings +
-        '</span> of those images ' +
+        '</span> of the images ' +
         hasHave +
         ' alt text that may be the same as the image title or caption, and ' +
         hasHave +
@@ -443,24 +580,46 @@ function runAltAuditOnPage() {
       reportMarkup +=
         '<p class="results-label altAudit-emptyAltWarningLabel"><span>' +
         emptyAltWarnings +
-        '</span> of those images ' +
+        '</span> of the images ' +
         hasHave +
         " empty alt attributes, which is only valid if the image is truly <a href='https://www.w3.org/WAI/tutorials/images/decorative/' target='_blank'>decorative</a>. It's worth double-shecking, so they " +
         hasHave +
         ' been <span class="altAudit-emptyAltWarningLabel">highlighted in purple</span> below.</p>';
     }
 
+    if (svgAriaHiddenWarnings > 0) {
+      let hasHave = svgAriaHiddenWarnings > 1 ? 'have' : 'has';
+      reportMarkup +=
+        '<p class="results-label altAudit-ariaHiddenWarningLabel"><span>' +
+        svgAriaHiddenWarnings +
+        '</span> of the SVGs had an `aria-hidden` attribute, which may be valid if the SVG is decorative, but ' +
+        hasHave +
+        ' been <span class="altAudit-ariaHiddenWarningLabel">highlighted in yellow</span> below.</p>';
+    }
+    if (svgNoAltWarnings > 0) {
+      let hasHave = svgNoAltWarnings > 1 ? 'have' : 'has';
+      reportMarkup +=
+        '<p class="results-label altAudit-noAltWarningLabel"><span>' +
+        svgNoAltWarnings +
+        '</span> of the SVGs did not have an `aria-hidden` attribute, and no alt text via the `title` or `desc` elements, and ' +
+        hasHave +
+        ' been <span class="altAudit-noAltWarningLabel">highlighted in red</span> below. <a href="https://www.deque.com/blog/creating-accessible-svgs/" target="_blank">Learn more about creating accessible SVGs</a>.</p>';
+    }
+
     // If alt text was found, build a list
-    if (altText.length > 0) {
-      let altListMarkup = '';
+    if (imageCount > 0) {
+      let imageListMarkup = '';
       // Build each list item
-      altText.forEach(function (image, index) {
+      images.forEach(function (image, index) {
+        // Get associated alt text
+        let imageAlt = altText[index];
         // Check for warnings
         let warning = (warningMessage = '');
         if (
           imageWarnings[index].filenameWarning ||
           imageWarnings[index].titleWarning ||
-          imageWarnings[index].emptyAltWarning
+          imageWarnings[index].emptyAltWarning ||
+          imageWarnings[index].noAltWarning
         ) {
           if (imageWarnings[index].filenameWarning) {
             warning = ' altAudit-altListItem-filenameWarning';
@@ -474,29 +633,78 @@ function runAltAuditOnPage() {
             warning = ' altAudit-altListItem-emptyAltWarning';
             warningMessage =
               '<span class="visually-hidden">. Warning: this alt text is empty.</span>';
+          } else if (imageWarnings[index].noAltWarning) {
+            warning = ' altAudit-altListItem-noAltWarning';
+            warningMessage =
+              '<span class="visually-hidden">. Warning: this image has no alt attribute.</span>';
           }
         }
-        altListMarkup +=
+        imageListMarkup +=
           '<li data-altaudit-matching-id="' +
           index +
           '" class="altAudit-altListItem' +
           warning +
           '"><span>' +
-          image +
+          imageAlt +
           '</span>' +
           warningMessage +
           '</li>';
       });
 
       reportMarkup +=
-        '<p class="results-label">Here\'s all of the alt attributes we found:</p><ol id="altAudit-altList">' +
-        altListMarkup +
-        '</ol></div>';
-    } else {
-      // Nothing found — boo!
-      reportMarkup +=
-        '<p class="results-label">We didn\'t find any alt attributes on this page. You probably need to add some good alt text to your images, or in the case of <a href="https://www.w3.org/WAI/tutorials/images/decorative/" target="_blank">decroative images</a>, add empty alt attributes. (ex: <code>alt=""</code>)</p></div>';
+        '<h2 class="text-medium">Images found:</h2><ol id="altAudit-imageList" class="altAudit-altList">' +
+        imageListMarkup +
+        '</ol>';
     }
+
+    if (svgCount > 0) {
+      let svgListMarkup = '';
+      // Build each list item
+      svgs.forEach(function (svg, index) {
+        // Get associated alt text
+        let svgAlt = svgAltText[index];
+        // Check for warnings
+        let warning = (warningMessage = '');
+        if (
+          svgWarnings[index].svgAriaHiddenWarning ||
+          svgWarnings[index].svgNoAltWarning
+        ) {
+          if (svgWarnings[index].svgAriaHiddenWarning) {
+            warning = ' altAudit-altListItem-svgAriaHiddenWarning';
+            warningMessage =
+              '<span class="visually-hidden">. Warning: this SVG has an aria-hidden attribute.</span>';
+          } else if (svgWarnings[index].svgNoAltWarning) {
+            warning = ' altAudit-altListItem-noSvgAltWarning';
+            warningMessage =
+              '<span class="visually-hidden">. Warning: this SVG has no alt text via the `title` or `desc` elements.</span>';
+          }
+        }
+        svgListMarkup +=
+          '<li data-altaudit-matching-id="svg-' +
+          index +
+          '" class="altAudit-altListItem' +
+          warning +
+          '"><span>' +
+          svgAlt +
+          '</span>' +
+          warningMessage +
+          '</li>';
+      });
+
+      reportMarkup +=
+        '<h2 class="text-medium">SVGs found:</h2><ol id="altAudit-svgList" class="altAudit-altList">' +
+        svgListMarkup +
+        '</ol>';
+    }
+
+    if (imageCount === 0 && svgCount === 0) {
+      // Nothing found
+      reportMarkup +=
+        '<p class="results-label">We didn\'t find any images or svgs on this page!</p>';
+    }
+
+    // Closing the overflow container
+    reportMarkup += '</div>';
 
     // Add drag and close buttons and custom resize handle
     reportMarkup +=
